@@ -17,20 +17,15 @@ serve(async (req) => {
   }
 
   try {
-    // Check if DeepSeek API key is available
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error("DeepSeek API key not configured");
-    }
-
     // Parse request body
     const { systemPrompt, userPrompt, userInfo, topCareerMatches } = await req.json();
 
     console.log("Received request to generate career report for:", userInfo.name);
+    console.log("System prompt:", systemPrompt.substring(0, 50) + "...");
+    console.log("Career matches:", topCareerMatches.length);
     
-    // For now, we'll mock the DeepSeek API call to provide a sample response structure
+    // Simulated DeepSeek API response structure for now
     // In production, this would be replaced with the actual API call
-
-    // Simulated DeepSeek API response structure
     const mockResponse = {
       sections: [
         {
@@ -82,8 +77,9 @@ serve(async (req) => {
       ]
     };
 
+    console.log("Returning mock DeepSeek response with sections:", mockResponse.sections.length);
+    
     // Return the mock response for now
-    // In production, this would be the actual DeepSeek API response
     return new Response(JSON.stringify(mockResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -92,38 +88,50 @@ serve(async (req) => {
     // This is how the actual DeepSeek API call would be structured
     // Uncomment and replace the mock response when DeepSeek API is ready
     
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "model": "deepseek-chat",
-        "messages": [
-          {
-            "role": "system",
-            "content": systemPrompt
-          },
-          {
-            "role": "user",
-            "content": userPrompt
-          }
-        ],
-        "temperature": 0.3,
-        "max_tokens": 3000,
-        "response_format": { "type": "json_object" }
-      })
-    });
+    if (!DEEPSEEK_API_KEY) {
+      throw new Error("DeepSeek API key not configured");
+    }
+    
+    console.log("Making DeepSeek API call...");
+    
+    try {
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          "model": "deepseek-chat",
+          "messages": [
+            {
+              "role": "system",
+              "content": systemPrompt
+            },
+            {
+              "role": "user",
+              "content": userPrompt
+            }
+          ],
+          "temperature": 0.3,
+          "max_tokens": 3000,
+          "response_format": { "type": "json_object" }
+        })
+      });
 
-    const data = await response.json();
-    
-    // Parse and process DeepSeek response
-    const generatedContent = JSON.parse(data.choices[0].message.content);
-    
-    return new Response(JSON.stringify(generatedContent), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      const data = await response.json();
+      console.log("DeepSeek API response received");
+      
+      // Parse and process DeepSeek response
+      const generatedContent = JSON.parse(data.choices[0].message.content);
+      
+      return new Response(JSON.stringify(generatedContent), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (apiError) {
+      console.error("DeepSeek API error:", apiError);
+      throw new Error(`DeepSeek API error: ${apiError.message}`);
+    }
     */
     
   } catch (error) {

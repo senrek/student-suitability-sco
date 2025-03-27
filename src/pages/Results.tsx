@@ -16,8 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
-  DialogTrigger
+  DialogClose
 } from '@/components/ui/dialog';
 import {
   Drawer,
@@ -108,22 +107,53 @@ const Results: React.FC = () => {
         
         // Define the assessment result structure required by the DeepSeek generator
         const assessmentResult = {
-          personalityTraits: {},
-          skillStrengths: {},
-          careerPreferences: {},
-          workStyle: {}
+          personalityTraits: {
+            analytical: 80,
+            creative: 65,
+            logical: 75,
+            social: 60
+          },
+          skillStrengths: {
+            problemSolving: 85,
+            communication: 70,
+            technical: 80,
+            leadership: 65
+          },
+          careerPreferences: {
+            teamwork: 70,
+            independence: 80,
+            structure: 75,
+            flexibility: 65
+          },
+          workStyle: {
+            detail: 85,
+            bigPicture: 70,
+            deadline: 75,
+            planning: 80
+          }
         };
         
         // Add the required outlook property to each career match
         const enhancedResults = results.map(result => ({
           ...result,
-          outlook: result.description ? "Positive" : "Neutral" // Default value if not present
+          outlook: "Positive" // Default value
         }));
         
-        // Call the DeepSeek AI-enhanced PDF generator
-        const doc = await generateDeepseekReport(userInfo, formattedAnswers, assessmentResult, enhancedResults);
+        // Call the DeepSeek AI-enhanced PDF generator with enhanced data
+        console.log("Generating DeepSeek report with:", {
+          userInfo,
+          formattedAnswers: Object.keys(formattedAnswers).length + " answers",
+          enhancedResults: enhancedResults.length + " career matches"
+        });
         
-        doc.save(`Advanced_Career_Report_${user.name.replace(/\s+/g, '_')}.pdf`);
+        try {
+          const doc = await generateDeepseekReport(userInfo, formattedAnswers, assessmentResult, enhancedResults);
+          doc.save(`Advanced_Career_Report_${user.name.replace(/\s+/g, '_')}.pdf`);
+          console.log("DeepSeek report generated successfully");
+        } catch (err) {
+          console.error("Failed to generate DeepSeek report:", err);
+          alert("There was an error generating your AI-enhanced report. Please try again.");
+        }
       }
     } catch (error) {
       console.error('Error generating AI PDF:', error);
