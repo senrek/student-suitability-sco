@@ -29,18 +29,6 @@ const Results: React.FC = () => {
   const topMatches = results.slice(0, 3);
   const otherMatches = results.slice(3, 8);
 
-  const getCareerMatches = () => {
-    // Transform the results into the required format
-    return results.map(match => ({
-      path: match.clusterName,
-      matchScore: match.score,
-      requirements: ['Bachelor\'s degree recommended', 'Industry certifications beneficial'],
-      skills: ['Technical skills', 'Problem-solving', 'Communication'],
-      outlook: 'Positive growth expected',
-      salary: '$50,000 - $120,000'
-    }));
-  };
-
   const handleShareResults = () => {
     // In a real app, this would open a share dialog
     alert('Sharing functionality would be implemented here.');
@@ -54,7 +42,10 @@ const Results: React.FC = () => {
         const userInfo = {
           name: user.name || 'Student',
           email: user.email || 'student@example.com',
-          grade: 'High School'
+          phoneNumber: user.phone || '',
+          age: user.age || '',
+          location: user.location || '',
+          grade: user.grade || 'High School'
         };
         
         const answeredQuestions = Object.keys(answers).length;
