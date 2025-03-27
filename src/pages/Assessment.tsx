@@ -13,12 +13,15 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type AssessmentTypeParam = Database['public']['Enums']['assessment_type'];
 
 const Assessment: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const assessmentTypeParam = queryParams.get('type');
+  const assessmentTypeParam = queryParams.get('type') as AssessmentTypeParam | null;
   
   const { 
     currentQuestion, 
@@ -42,7 +45,7 @@ const Assessment: React.FC = () => {
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showMilestoneSelection, setShowMilestoneSelection] = useState(true);
   const [userName, setUserName] = useState("");
-  const [selectedAssessmentType, setSelectedAssessmentType] = useState<string>(assessmentTypeParam || "grade_8_10");
+  const [selectedAssessmentType, setSelectedAssessmentType] = useState<AssessmentTypeParam>(assessmentTypeParam || "grade_8_10");
   
   useEffect(() => {
     if (assessmentTypeParam) {
@@ -55,7 +58,6 @@ const Assessment: React.FC = () => {
     }
   }, [assessmentTypeParam]);
 
-  // Add effect to set user name from profile
   useEffect(() => {
     if (user?.name) {
       setUserName(user.name);
@@ -77,7 +79,6 @@ const Assessment: React.FC = () => {
       const answeredQuestions = Object.keys(answers).length;
       const doc = generateAssessmentReport(userInfo, results, answeredQuestions, totalQuestions);
       
-      // Save the PDF with a meaningful filename
       const fileName = `Career_Assessment_Report_${user.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
     } catch (error) {
@@ -88,7 +89,7 @@ const Assessment: React.FC = () => {
     }
   };
 
-  const handleStartAssessment = async (type: string) => {
+  const handleStartAssessment = async (type: AssessmentTypeParam) => {
     if (type === 'grade_11_12') {
       loadHighSchoolQuestions();
       setAssessmentType('high-school');
@@ -99,7 +100,6 @@ const Assessment: React.FC = () => {
     
     setShowMilestoneSelection(false);
     
-    // Create assessment session in Supabase
     if (user) {
       try {
         const { error } = await supabase
@@ -120,7 +120,6 @@ const Assessment: React.FC = () => {
     }
   };
 
-  // Creating content conditionally without early returns
   let content;
   
   if (!user) {

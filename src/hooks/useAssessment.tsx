@@ -5,6 +5,10 @@ import { careerAssessmentQuestions } from '../utils/careerAssessmentData';
 import { juniorAssessmentQuestions } from '../utils/juniorAssessmentData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
+import type { Database } from '@/integrations/supabase/types';
+
+type AssessmentType = 'career' | 'aptitude' | 'high-school';
+type SupabaseAssessmentType = Database['public']['Enums']['assessment_type'];
 
 const additionalHighSchoolQuestions: Question[] = [
   {
@@ -680,7 +684,7 @@ type AssessmentState = {
   answers: Record<number, number>;
   completed: boolean;
   results: CareerMatch[] | null;
-  assessmentType: 'career' | 'aptitude' | 'high-school';
+  assessmentType: AssessmentType;
 };
 
 export interface CareerMatch {
@@ -769,13 +773,11 @@ export const useAssessment = () => {
   const answerQuestion = async (optionIndex: number) => {
     const newAnswers = { ...state.answers, [state.currentIndex]: optionIndex };
     
-    // Update answers without moving to next question
     setState(prev => ({
       ...prev,
       answers: newAnswers,
     }));
     
-    // Save answer to Supabase if user is logged in
     if (user) {
       try {
         const { data: sessionData } = await supabase
@@ -812,7 +814,6 @@ export const useAssessment = () => {
         completed: true,
       }));
       
-      // Update session status in Supabase
       if (user) {
         try {
           const { data: sessionData } = await supabase
@@ -838,20 +839,18 @@ export const useAssessment = () => {
         }
       }
       
-      // Calculate results
       if (state.assessmentType === 'career' || state.assessmentType === 'high-school') {
         calculateResults(state.answers);
       } else {
         calculateAptitudeResults(state.answers);
       }
     } else {
-      // Move to next question without carrying over any selected answer
       setState(prev => ({
         ...prev,
         currentIndex: prev.currentIndex + 1,
         answers: {
           ...prev.answers,
-          [prev.currentIndex + 1]: undefined // Explicitly set next question's answer to undefined
+          [prev.currentIndex + 1]: undefined
         }
       }));
     }
@@ -990,11 +989,10 @@ export const useAssessment = () => {
   };
 
   const autoAnswer = async () => {
-    const newAnswers: Record<number, number> = { ...state.answers }; // Preserve existing answers
+    const newAnswers: Record<number, number> = { ...state.answers };
 
-    // Only answer unanswered questions
     state.questions.forEach((question, index) => {
-      if (newAnswers[index] === undefined) { // Check if unanswered
+      if (newAnswers[index] === undefined) {
         const randomOptionIndex = Math.floor(Math.random() * question.options.length);
         newAnswers[index] = randomOptionIndex;
       }
@@ -1007,7 +1005,6 @@ export const useAssessment = () => {
       completed: true,
     }));
 
-    // Save only new answers to Supabase
     if (user) {
       try {
         const { data: sessionData } = await supabase
@@ -1020,9 +1017,8 @@ export const useAssessment = () => {
         if (sessionData?.[0]?.id) {
           const sessionId = sessionData[0].id;
           
-          // Filter only new answers
           const answersToSave = Object.entries(newAnswers)
-            .filter(([index]) => !(index in state.answers)) // Only new entries
+            .filter(([index]) => !(index in state.answers))
             .map(([questionIndex, answer]) => ({
               session_id: sessionId,
               question_number: parseInt(questionIndex) + 1,
@@ -1050,11 +1046,54 @@ export const useAssessment = () => {
       }
     }
 
-    // Calculate results with combined answers
     if (state.assessmentType === 'career' || state.assessmentType === 'high-school') {
       calculateResults(newAnswers);
     } else {
       calculateAptitudeResults(newAnswers);
+    }
+  };
+
+  const mapAssessmentTypeToSupabase = (type: AssessmentType): SupabaseAssessmentType => {
+    switch (type) {
+      case 'career':
+        return 'grade_8_10';
+      case 'high-school':
+        return 'grade_11_12';
+      default:
+        return 'grade_8_10';
+    }
+  };
+
+  const handleStartAssessment = async (type: string) => {
+    if (type === 'grade_11_12') {
+      loadHighSchoolQuestions();
+      setAssessmentType('high-school');
+    } else if (type === 'grade_8_10') {
+      setAssessmentType('career');
+      resetAssessment();
+    }
+    
+    setShowMilestoneSelection(false);
+    
+    if (user) {
+      try {
+        const supabaseType = type as SupabaseAssessmentType;
+        
+        const { error } = await supabase
+          .from('assessment_sessions')
+          .insert({
+            user_id: user.id,
+            assessment_type: supabaseType,
+            current_question: 0,
+            completed: false
+          });
+          
+        if (error) {
+          console.error('Error creating assessment session:', error);
+        }
+      } catch (err) {
+        console.error('Error saving session to Supabase:', err);
+      }
     }
   };
 

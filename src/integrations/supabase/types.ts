@@ -77,12 +77,12 @@ export type Database = {
             foreignKeyName: "assessment_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "profiles_old"
             referencedColumns: ["id"]
           },
         ]
       }
-      profiles: {
+      profiles_old: {
         Row: {
           created_at: string
           full_name: string | null
