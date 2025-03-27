@@ -200,7 +200,7 @@ export const generateAssessmentReport = (
     const workNaturePoints = [
       'Examines or conducts tests on patient to provide information on a medical condition.',
       'Prescribes or administers treatment, therapy, medication, vaccination, and other specialized medical care.',
-      'Monitors patients' condition and progress and re-evaluates treatments as necessary.',
+      "Monitors patients' condition and progress and re-evaluates treatments as necessary.",
       'Explains procedures and discusses test results on prescribed treatments with patents.',
       'Collects, records, and maintains patient information, such as medical history and reports.'
     ];
