@@ -1,18 +1,18 @@
+
 import React, { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAssessment } from '../hooks/useAssessment';
-import { useEnhancedAssessment } from '../hooks/useEnhancedAssessment';
 import PageTransition from '../components/layout/PageTransition';
 import CareerMatchCard from '../components/results/CareerMatch';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Share, BookOpen, Download, FileText, CheckCircle } from 'lucide-react';
-import { generateEnhancedReport } from '../utils/enhancedPdfGenerator';
+import { generateAssessmentReport } from '../utils/pdfReportGenerator';
 import { Card } from '@/components/ui/card';
 
 const Results: React.FC = () => {
   const { user } = useAuth();
-  const { results, resetAssessment, answers, enhancedResult } = useAssessment();
+  const { results, resetAssessment, answers } = useAssessment();
   const [generating, setGenerating] = useState(false);
 
   // Redirect if not logged in
@@ -30,7 +30,7 @@ const Results: React.FC = () => {
   const otherMatches = results.slice(3, 8);
 
   const getCareerMatches = () => {
-    // Transform the results into the required CareerPathAnalysis format
+    // Transform the results into the required format
     return results.map(match => ({
       path: match.clusterName,
       matchScore: match.score,
@@ -50,26 +50,19 @@ const Results: React.FC = () => {
     try {
       setGenerating(true);
       
-      // Get career matches from enhanced assessment
-      const careerMatches = getCareerMatches();
-      
-      // Generate and download the enhanced PDF report
-      await generateEnhancedReport(
-        user,
-        Object.entries(answers).map(([id, answer]) => ({
-          questionId: id,
-          question: "Question text",
-          answer: answer.toString(),
-          category: "assessment"
-        })),
-        enhancedResult || {
-          personalityTraits: {},
-          skillStrengths: {},
-          careerPreferences: {},
-          workStyle: {}
-        },
-        careerMatches
-      );
+      if (user && results) {
+        const userInfo = {
+          name: user.name || 'Student',
+          email: user.email || 'student@example.com',
+          grade: 'High School'
+        };
+        
+        const answeredQuestions = Object.keys(answers).length;
+        const totalQuestions = 100; // This is an example, adapt to your actual total
+        
+        const doc = generateAssessmentReport(userInfo, results, answeredQuestions, totalQuestions);
+        doc.save(`Career_Assessment_Report_${user.name.replace(/\s+/g, '_')}.pdf`);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('There was an error generating your report. Please try again.');
@@ -149,7 +142,7 @@ const Results: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {topMatches.map((match, index) => (
                 <CareerMatchCard 
-                  key={match.clusterId} 
+                  key={index} 
                   careerMatch={match} 
                   index={index} 
                 />
@@ -163,7 +156,7 @@ const Results: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {otherMatches.map((match, index) => (
                   <CareerMatchCard 
-                    key={match.clusterId} 
+                    key={index} 
                     careerMatch={match} 
                     index={index + 3} 
                   />

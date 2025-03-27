@@ -62,6 +62,7 @@ export const generateAssessmentReport = (
       `${match.score}%`
     ]);
     
+    // Using autoTable as a function instead of a method
     autoTable(doc, {
       startY: 120,
       head: [['Rank', 'Career Cluster', 'Match Score']],
@@ -74,30 +75,32 @@ export const generateAssessmentReport = (
     if (topMatches.length > 0) {
       const topCareer = topMatches[0];
       
+      const lastTableY = (doc as any).lastAutoTable.finalY;
+      
       doc.setFontSize(14);
       doc.setTextColor(33, 53, 120);
-      doc.text('Top Career Match Analysis', 15, doc.autoTable.previous.finalY + 20);
+      doc.text('Top Career Match Analysis', 15, lastTableY + 20);
       
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Career Field: ${topCareer.clusterName}`, 15, doc.autoTable.previous.finalY + 30);
+      doc.text(`Career Field: ${topCareer.clusterName}`, 15, lastTableY + 30);
       
       doc.setFontSize(11);
-      doc.text('Description:', 15, doc.autoTable.previous.finalY + 40);
+      doc.text('Description:', 15, lastTableY + 40);
       
       const descriptionLines = doc.splitTextToSize(topCareer.description, 180);
-      doc.text(descriptionLines, 15, doc.autoTable.previous.finalY + 48);
+      doc.text(descriptionLines, 15, lastTableY + 48);
       
       // Career paths table
       if (topCareer.careers && topCareer.careers.length > 0) {
         doc.setFontSize(12);
         doc.setTextColor(33, 53, 120);
-        doc.text('Potential Career Paths', 15, doc.autoTable.previous.finalY + 70);
+        doc.text('Potential Career Paths', 15, lastTableY + 70);
         
         const careersData = topCareer.careers.map(career => [career]);
         
         autoTable(doc, {
-          startY: doc.autoTable.previous.finalY + 80,
+          startY: lastTableY + 80,
           head: [['Career Options']],
           body: careersData,
           theme: 'grid',
@@ -126,9 +129,11 @@ export const generateAssessmentReport = (
       
       // Resources
       if (topCareer.resources && topCareer.resources.length > 0) {
+        const lastTableY = (doc as any).lastAutoTable.finalY;
+        
         doc.setFontSize(14);
         doc.setTextColor(33, 53, 120);
-        doc.text('Additional Resources', 15, doc.autoTable.previous.finalY + 20);
+        doc.text('Additional Resources', 15, lastTableY + 20);
         
         const resourcesData = topCareer.resources.map(resource => [
           resource.title,
@@ -136,7 +141,7 @@ export const generateAssessmentReport = (
         ]);
         
         autoTable(doc, {
-          startY: doc.autoTable.previous.finalY + 30,
+          startY: lastTableY + 30,
           head: [['Resource', 'URL']],
           body: resourcesData,
           theme: 'grid',

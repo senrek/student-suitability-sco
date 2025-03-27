@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -207,7 +208,7 @@ const Assessment: React.FC = () => {
                     <Label className="mb-3 block">I need Guidance for (Select Any One):</Label>
                     <RadioGroup 
                       value={selectedAssessmentType} 
-                      onValueChange={setSelectedAssessmentType}
+                      onValueChange={(value: AssessmentTypeParam) => setSelectedAssessmentType(value)}
                       className="space-y-3"
                     >
                       <div className="flex items-center space-x-2 bg-background p-3 rounded-md border">

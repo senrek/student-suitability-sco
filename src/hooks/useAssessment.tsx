@@ -1064,39 +1064,6 @@ export const useAssessment = () => {
     }
   };
 
-  const handleStartAssessment = async (type: string) => {
-    if (type === 'grade_11_12') {
-      loadHighSchoolQuestions();
-      setAssessmentType('high-school');
-    } else if (type === 'grade_8_10') {
-      setAssessmentType('career');
-      resetAssessment();
-    }
-    
-    setShowMilestoneSelection(false);
-    
-    if (user) {
-      try {
-        const supabaseType = type as SupabaseAssessmentType;
-        
-        const { error } = await supabase
-          .from('assessment_sessions')
-          .insert({
-            user_id: user.id,
-            assessment_type: supabaseType,
-            current_question: 0,
-            completed: false
-          });
-          
-        if (error) {
-          console.error('Error creating assessment session:', error);
-        }
-      } catch (err) {
-        console.error('Error saving session to Supabase:', err);
-      }
-    }
-  };
-
   return {
     currentQuestion: state.questions[state.currentIndex],
     currentIndex: state.currentIndex,
