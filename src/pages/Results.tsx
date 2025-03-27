@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,7 +16,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose
+  DialogClose,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import {
   Drawer,
@@ -100,8 +100,14 @@ const Results: React.FC = () => {
           grade: user.grade || '11-12'
         };
         
+        // Convert Record<number, number> to Record<string, string>
+        const formattedAnswers: Record<string, string> = {};
+        Object.entries(answers).forEach(([key, value]) => {
+          formattedAnswers[key] = value.toString();
+        });
+        
         // Call the DeepSeek AI-enhanced PDF generator
-        const doc = await generateDeepseekReport(userInfo, answers, {
+        const doc = await generateDeepseekReport(userInfo, formattedAnswers, {
           personalityTraits: {},
           skillStrengths: {},
           careerPreferences: {},

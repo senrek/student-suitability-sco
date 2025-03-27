@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -41,14 +40,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
       if (type === 'login') {
         await login(email, password);
       } else {
-        await register({
-          name,
-          email,
-          password,
-          grade,
-          school,
-          interests
-        });
+        await register(name, email, password);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

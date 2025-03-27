@@ -39,9 +39,6 @@ site_url = "http://localhost:3000"
 [storage]
 enabled = true
 
-[vector]
-enabled = true
-
 [functions]
 [functions.generate-career-report]
 verify_jwt = false

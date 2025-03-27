@@ -12,6 +12,9 @@ export interface User {
   age?: string;
   location?: string;
   grade?: string;
+  // Add missing properties
+  school?: string;
+  interests?: string[];
 }
 
 interface AuthContextType {
@@ -20,6 +23,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  // Add updateProfile method
+  updateProfile: (userData: Partial<User>) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -31,6 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   logout: () => {},
+  updateProfile: async () => {},
   loading: false,
   error: null
 });
@@ -69,7 +75,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         phoneNumber: '123-456-7890',
         age: '17',
         location: 'Mumbai, India',
-        grade: '11-12'
+        grade: '11-12',
+        school: 'Delhi Public School',
+        interests: ['Science', 'Technology', 'Mathematics']
       };
       
       // Store user in localStorage for session persistence
@@ -98,7 +106,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         phoneNumber: '',
         age: '',
         location: '',
-        grade: '11-12'
+        grade: '11-12',
+        school: '',
+        interests: []
       };
       
       // Store user in localStorage for session persistence
@@ -108,6 +118,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       setError('Registration failed. Please try again.');
       console.error('Registration error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update profile function
+  const updateProfile = async (userData: Partial<User>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (user) {
+        // Update the user object with new data
+        const updatedUser = { ...user, ...userData };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+      }
+      
+      return Promise.resolve();
+    } catch (err) {
+      setError('Failed to update profile');
+      console.error('Profile update error:', err);
+      return Promise.reject(err);
     } finally {
       setLoading(false);
     }
@@ -126,7 +159,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAuthenticated: !!user, 
       login, 
       register, 
-      logout, 
+      logout,
+      updateProfile,
       loading, 
       error 
     }}>
