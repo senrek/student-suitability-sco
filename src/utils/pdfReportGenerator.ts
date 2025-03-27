@@ -588,4 +588,3 @@ export const generateAssessmentReport = (
     return doc;
   }
 };
-
