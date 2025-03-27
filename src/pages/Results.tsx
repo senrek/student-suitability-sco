@@ -8,12 +8,35 @@ import CareerMatchCard from '../components/results/CareerMatch';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Share, BookOpen, Download, FileText, CheckCircle } from 'lucide-react';
 import { generateAssessmentReport } from '../utils/pdfReportGenerator';
+import { generateDeepseekReport } from '../utils/deepseekPdfGenerator';
 import { Card } from '@/components/ui/card';
+import { 
+  Dialog, 
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from '@/hooks/use-mobile';
 
 const Results: React.FC = () => {
   const { user } = useAuth();
   const { results, resetAssessment, answers } = useAssessment();
   const [generating, setGenerating] = useState(false);
+  const [showPremiumDialog, setShowPremiumDialog] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // Redirect if not logged in
   if (!user) {
@@ -42,7 +65,7 @@ const Results: React.FC = () => {
         const userInfo = {
           name: user.name || 'Student',
           email: user.email || 'student@example.com',
-          phoneNumber: user.phone || '',
+          phoneNumber: user.phoneNumber || '',
           age: user.age || '',
           location: user.location || '',
           grade: user.grade || 'High School'
@@ -60,6 +83,144 @@ const Results: React.FC = () => {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleDownloadAIResults = async () => {
+    try {
+      setGenerating(true);
+      setShowPremiumDialog(false);
+      
+      if (user && results) {
+        const userInfo = {
+          name: user.name || 'Student',
+          email: user.email || 'student@example.com',
+          phoneNumber: user.phoneNumber || '',
+          age: user.age || '',
+          location: user.location || '',
+          grade: user.grade || '11-12'
+        };
+        
+        // Call the DeepSeek AI-enhanced PDF generator
+        const doc = await generateDeepseekReport(userInfo, answers, {
+          personalityTraits: {},
+          skillStrengths: {},
+          careerPreferences: {},
+          workStyle: {}
+        }, results);
+        
+        doc.save(`Advanced_Career_Report_${user.name.replace(/\s+/g, '_')}.pdf`);
+      }
+    } catch (error) {
+      console.error('Error generating AI PDF:', error);
+      alert('There was an error generating your AI-enhanced report. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const PremiumDialog = () => {
+    const DialogComponent = isMobile ? Drawer : Dialog;
+    const DialogTriggerComponent = isMobile ? DrawerTrigger : DialogTrigger;
+    
+    return (
+      <DialogComponent open={showPremiumDialog} onOpenChange={setShowPremiumDialog}>
+        {isMobile ? (
+          <DrawerContent>
+            <DrawerHeader className="text-center">
+              <DrawerTitle>Premium AI-Enhanced Report</DrawerTitle>
+              <DrawerDescription>
+                Upgrade to our advanced AI-enhanced career report
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 py-2">
+              <div className="space-y-4 mt-2 mb-6">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">10-page comprehensive analysis based on your assessment</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">AI-powered insights using advanced DeepSeek AI technology</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">Personalized recommendations and skill gap analysis</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">Customized education roadmap for your career goals</p>
+                </div>
+              </div>
+            </div>
+            <DrawerFooter>
+              <Button 
+                onClick={handleDownloadAIResults} 
+                className="bg-indigo-600 hover:bg-indigo-700"
+                disabled={generating}
+              >
+                {generating ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Premium Report...
+                  </>
+                ) : (
+                  "Generate Premium Report"
+                )}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        ) : (
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Premium AI-Enhanced Report</DialogTitle>
+              <DialogDescription>
+                Upgrade to our advanced AI-enhanced career report
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-2 mb-6">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                <p className="text-sm">10-page comprehensive analysis based on your assessment</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                <p className="text-sm">AI-powered insights using advanced DeepSeek AI technology</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                <p className="text-sm">Personalized recommendations and skill gap analysis</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                <p className="text-sm">Customized education roadmap for your career goals</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button 
+                onClick={handleDownloadAIResults} 
+                className="bg-indigo-600 hover:bg-indigo-700"
+                disabled={generating}
+              >
+                {generating ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Premium Report"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </DialogComponent>
+    );
   };
 
   return (
@@ -85,7 +246,7 @@ const Results: React.FC = () => {
             You have successfully completed the Career Assessment Test.
             Your personalized career assessment report is ready for download.
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-col md:flex-row justify-center gap-4">
             <Button
               onClick={handleDownloadResults}
               disabled={generating}
@@ -100,9 +261,18 @@ const Results: React.FC = () => {
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  Download Your Report
+                  Download Basic Report
                 </>
               )}
+            </Button>
+            <Button
+              onClick={() => setShowPremiumDialog(true)}
+              size="lg"
+              variant="outline"
+              className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Get AI-Enhanced Report
             </Button>
           </div>
         </Card>
@@ -166,6 +336,9 @@ const Results: React.FC = () => {
             </Button>
           </div>
         </div>
+
+        {/* Premium Dialog */}
+        <PremiumDialog />
       </div>
     </PageTransition>
   );

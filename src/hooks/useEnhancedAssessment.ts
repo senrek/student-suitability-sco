@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 
 interface Question {
@@ -15,6 +16,16 @@ interface AssessmentResult {
   workStyle: { [key: string]: number };
 }
 
+export interface CareerPathAnalysis {
+  path: string;
+  matchScore: number;
+  requirements: string[];
+  skills: string[];
+  outlook: string;
+  salary: string;
+}
+
+// Extended with more comprehensive questions for 11-12th grade assessment
 const QUESTIONS: Question[] = [
   // Personality Questions
   {
@@ -29,16 +40,149 @@ const QUESTIONS: Question[] = [
     category: 'personality',
     trait: 'analytical'
   },
-  // Add more questions here...
+  {
+    id: 'p2',
+    text: 'When working on a group project, do you prefer to:',
+    options: [
+      'Take the lead and organize others',
+      'Focus on specific tasks independently',
+      'Support team members and mediate discussions',
+      'Generate creative ideas and solutions'
+    ],
+    category: 'personality',
+    trait: 'leadership'
+  },
+  {
+    id: 'p3',
+    text: 'How do you respond to new situations or environments?',
+    options: [
+      'Carefully observe before acting',
+      'Dive in and learn through experience',
+      'Research thoroughly beforehand',
+      'Adapt quickly and go with the flow'
+    ],
+    category: 'personality',
+    trait: 'adaptability'
+  },
+  // Skills Questions
+  {
+    id: 's1',
+    text: 'Which of these activities do you find most engaging?',
+    options: [
+      'Analyzing data and statistics',
+      'Creating art or design work',
+      'Helping others solve personal problems',
+      'Building or fixing things'
+    ],
+    category: 'skills',
+    trait: 'technical'
+  },
+  {
+    id: 's2',
+    text: 'Which subject area do you excel in most naturally?',
+    options: [
+      'Mathematics and logical reasoning',
+      'Languages and written expression',
+      'Social studies and human behavior',
+      'Sciences and research'
+    ],
+    category: 'skills',
+    trait: 'academic'
+  },
+  // Preferences Questions
+  {
+    id: 'pref1',
+    text: 'What type of work environment would you prefer?',
+    options: [
+      'Structured with clear rules and expectations',
+      'Creative and flexible',
+      'Collaborative and team-oriented',
+      'Independent with autonomy'
+    ],
+    category: 'preferences',
+    trait: 'environment'
+  },
+  {
+    id: 'pref2',
+    text: 'What would you value most in a career?',
+    options: [
+      'Financial stability and security',
+      'Creativity and self-expression',
+      'Helping others and making a difference',
+      'Status and recognition'
+    ],
+    category: 'preferences',
+    trait: 'values'
+  },
+  // Work Style Questions
+  {
+    id: 'w1',
+    text: 'How do you prefer to manage your time?',
+    options: [
+      'Follow a detailed schedule',
+      'Prioritize flexibly based on what needs attention',
+      'Work in focused bursts of energy',
+      'Multitask on several activities at once'
+    ],
+    category: 'workStyle',
+    trait: 'timeManagement'
+  },
+  {
+    id: 'w2',
+    text: 'When learning something new, you prefer to:',
+    options: [
+      'Follow step-by-step instructions',
+      'Understand the big picture first',
+      'Try it out hands-on',
+      'Discuss it with others'
+    ],
+    category: 'workStyle',
+    trait: 'learningStyle'
+  },
+  // Add more questions as needed...
 ];
 
+// Extended career paths with more details
 const CAREER_PATHS = [
   {
     path: 'Software Development',
     traits: ['analytical', 'technical', 'innovative'],
     skills: ['programming', 'problem-solving', 'logical-thinking'],
     outlook: 'Excellent',
-    salary: '$70,000 - $150,000'
+    salary: '$70,000 - $150,000',
+    requirements: ['Computer Science degree or equivalent', 'Programming skills', 'Analytical abilities']
+  },
+  {
+    path: 'Medical Practice',
+    traits: ['analytical', 'compassionate', 'detail-oriented'],
+    skills: ['science-knowledge', 'critical-thinking', 'communication'],
+    outlook: 'Excellent',
+    salary: '$80,000 - $200,000+',
+    requirements: ['Medical degree', 'Strong sciences background', 'Interpersonal skills']
+  },
+  {
+    path: 'Engineering',
+    traits: ['analytical', 'technical', 'problem-solving'],
+    skills: ['mathematics', 'physics', 'design-thinking'],
+    outlook: 'Very Good',
+    salary: '$65,000 - $130,000',
+    requirements: ['Engineering degree', 'Strong mathematics', 'Technical aptitude']
+  },
+  {
+    path: 'Creative Arts',
+    traits: ['creative', 'expressive', 'observant'],
+    skills: ['artistic-ability', 'visual-thinking', 'design'],
+    outlook: 'Good',
+    salary: '$40,000 - $120,000',
+    requirements: ['Portfolio development', 'Creative skills', 'Technical proficiency in medium']
+  },
+  {
+    path: 'Business Management',
+    traits: ['leadership', 'strategic', 'decisive'],
+    skills: ['communication', 'organization', 'analytical-thinking'],
+    outlook: 'Very Good',
+    salary: '$60,000 - $150,000',
+    requirements: ['Business degree preferred', 'Leadership abilities', 'Communication skills']
   },
   // Add more career paths...
 ];
@@ -89,7 +233,10 @@ export const useEnhancedAssessment = () => {
 
     // Normalize scores to percentages
     const normalizeScores = (scores: { [key: string]: number }) => {
-      const maxScore = Math.max(...Object.values(scores));
+      const values = Object.values(scores);
+      if (values.length === 0) return {};
+      
+      const maxScore = Math.max(...values);
       return Object.fromEntries(
         Object.entries(scores).map(([key, value]) => [
           key,
@@ -134,7 +281,7 @@ export const useEnhancedAssessment = () => {
       return {
         path: career.path,
         matchScore: averageScore,
-        requirements: ['Education requirement 1', 'Requirement 2'],
+        requirements: career.requirements,
         skills: career.skills,
         outlook: career.outlook,
         salary: career.salary
@@ -142,15 +289,30 @@ export const useEnhancedAssessment = () => {
     }).sort((a, b) => b.matchScore - a.matchScore);
   }, [result]);
 
+  // Get formatted answers for AI processing
+  const getFormattedAnswers = useCallback(() => {
+    return Object.entries(answers).map(([questionId, answer]) => {
+      const question = QUESTIONS.find(q => q.id === questionId);
+      return {
+        questionId,
+        question: question?.text || '',
+        answer,
+        category: question?.category || ''
+      };
+    });
+  }, [answers]);
+
   return {
     currentQuestion,
     setCurrentQuestion,
     submitAnswer,
     calculateResults,
     getCareerMatches,
+    getFormattedAnswers,
     result,
     totalQuestions: QUESTIONS.length,
-    questions: QUESTIONS
+    questions: QUESTIONS,
+    answers
   };
 };
 
