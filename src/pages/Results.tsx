@@ -106,13 +106,22 @@ const Results: React.FC = () => {
           formattedAnswers[key] = value.toString();
         });
         
-        // Call the DeepSeek AI-enhanced PDF generator
-        const doc = await generateDeepseekReport(userInfo, formattedAnswers, {
+        // Define the assessment result structure required by the DeepSeek generator
+        const assessmentResult = {
           personalityTraits: {},
           skillStrengths: {},
           careerPreferences: {},
           workStyle: {}
-        }, results);
+        };
+        
+        // Add the required outlook property to each career match
+        const enhancedResults = results.map(result => ({
+          ...result,
+          outlook: result.description ? "Positive" : "Neutral" // Default value if not present
+        }));
+        
+        // Call the DeepSeek AI-enhanced PDF generator
+        const doc = await generateDeepseekReport(userInfo, formattedAnswers, assessmentResult, enhancedResults);
         
         doc.save(`Advanced_Career_Report_${user.name.replace(/\s+/g, '_')}.pdf`);
       }
@@ -125,67 +134,16 @@ const Results: React.FC = () => {
   };
 
   const PremiumDialog = () => {
-    const DialogComponent = isMobile ? Drawer : Dialog;
-    const DialogTriggerComponent = isMobile ? DrawerTrigger : DialogTrigger;
-    
-    return (
-      <DialogComponent open={showPremiumDialog} onOpenChange={setShowPremiumDialog}>
-        {isMobile ? (
-          <DrawerContent>
-            <DrawerHeader className="text-center">
-              <DrawerTitle>Premium AI-Enhanced Report</DrawerTitle>
-              <DrawerDescription>
-                Upgrade to our advanced AI-enhanced career report
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4 py-2">
-              <div className="space-y-4 mt-2 mb-6">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">10-page comprehensive analysis based on your assessment</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">AI-powered insights using advanced DeepSeek AI technology</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">Personalized recommendations and skill gap analysis</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">Customized education roadmap for your career goals</p>
-                </div>
-              </div>
-            </div>
-            <DrawerFooter>
-              <Button 
-                onClick={handleDownloadAIResults} 
-                className="bg-indigo-600 hover:bg-indigo-700"
-                disabled={generating}
-              >
-                {generating ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Premium Report...
-                  </>
-                ) : (
-                  "Generate Premium Report"
-                )}
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </DrawerContent>
-        ) : (
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Premium AI-Enhanced Report</DialogTitle>
-              <DialogDescription>
-                Upgrade to our advanced AI-enhanced career report
-              </DialogDescription>
-            </DialogHeader>
+    return isMobile ? (
+      <Drawer open={showPremiumDialog} onOpenChange={setShowPremiumDialog}>
+        <DrawerContent>
+          <DrawerHeader className="text-center">
+            <DrawerTitle>Premium AI-Enhanced Report</DrawerTitle>
+            <DrawerDescription>
+              Upgrade to our advanced AI-enhanced career report
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 py-2">
             <div className="space-y-4 mt-2 mb-6">
               <div className="flex items-start gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
@@ -204,28 +162,76 @@ const Results: React.FC = () => {
                 <p className="text-sm">Customized education roadmap for your career goals</p>
               </div>
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button 
-                onClick={handleDownloadAIResults} 
-                className="bg-indigo-600 hover:bg-indigo-700"
-                disabled={generating}
-              >
-                {generating ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate Premium Report"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        )}
-      </DialogComponent>
+          </div>
+          <DrawerFooter>
+            <Button 
+              onClick={handleDownloadAIResults} 
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={generating}
+            >
+              {generating ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Premium Report...
+                </>
+              ) : (
+                "Generate Premium Report"
+              )}
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    ) : (
+      <Dialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Premium AI-Enhanced Report</DialogTitle>
+            <DialogDescription>
+              Upgrade to our advanced AI-enhanced career report
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2 mb-6">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+              <p className="text-sm">10-page comprehensive analysis based on your assessment</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+              <p className="text-sm">AI-powered insights using advanced DeepSeek AI technology</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+              <p className="text-sm">Personalized recommendations and skill gap analysis</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+              <p className="text-sm">Customized education roadmap for your career goals</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button 
+              onClick={handleDownloadAIResults} 
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={generating}
+            >
+              {generating ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Generate Premium Report"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   };
 

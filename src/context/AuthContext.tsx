@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 
@@ -12,7 +11,6 @@ export interface User {
   age?: string;
   location?: string;
   grade?: string;
-  // Add missing properties
   school?: string;
   interests?: string[];
 }
@@ -23,7 +21,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  // Add updateProfile method
   updateProfile: (userData: Partial<User>) => Promise<void>;
   loading: boolean;
   error: string | null;
