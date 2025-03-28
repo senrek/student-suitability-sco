@@ -49,3 +49,6 @@ enable_confirmations = true
 [analytics]
 enabled = false
 port = 54327
+
+[functions]
+[functions.generate-ai-report]
