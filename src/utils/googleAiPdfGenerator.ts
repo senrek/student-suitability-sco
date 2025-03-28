@@ -38,8 +38,8 @@ const saveReportToSupabase = async (userId: string, reportData: AIReportData, ca
       .from('assessment_reports')
       .insert({
         user_id: userId,
-        report_data: reportData,
-        career_matches: careerMatches
+        report_data: reportData as any,
+        career_matches: careerMatches as any
       });
     
     if (error) {

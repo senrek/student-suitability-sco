@@ -18,12 +18,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { DownloadIcon, ArrowRightIcon, Brain, FileText } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
+import { Json } from '@/integrations/supabase/types';
 
 type Report = {
   id: string;
   created_at: string;
   report_data: any;
-  career_matches: CareerMatch[];
+  career_matches: any;
+  user_id: string;
 };
 
 const Results: React.FC = () => {
@@ -57,7 +59,7 @@ const Results: React.FC = () => {
         }
         
         if (data) {
-          setPreviousReports(data);
+          setPreviousReports(data as Report[]);
         }
       } catch (err) {
         console.error('Error in fetchPreviousReports:', err);
@@ -69,13 +71,14 @@ const Results: React.FC = () => {
     fetchPreviousReports();
   }, [user]);
   
-  const { result } = useAssessment();
+  const assessment = useAssessment();
+  const careerMatches = assessment.results || [];
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
   
-  if (!result) {
+  if (!assessment.results || assessment.results.length === 0) {
     return (
       <PageTransition>
         <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -95,8 +98,6 @@ const Results: React.FC = () => {
       </PageTransition>
     );
   }
-  
-  const careerMatches = result ? result.personalityTraits : [];
   
   const generateBasicReport = async () => {
     if (!user) {
@@ -168,7 +169,7 @@ const Results: React.FC = () => {
         'q3': 'I am interested in technology',
       };
       
-      const doc = await generateGoogleAiReport(userInfo, answers, result, []);
+      const doc = await generateGoogleAiReport(userInfo, answers, assessment, careerMatches);
       doc.save(`${user.name.replace(/\s+/g, '_')}_AI_Career_Report.pdf`);
       
       toast({
@@ -184,7 +185,7 @@ const Results: React.FC = () => {
         .order('created_at', { ascending: false });
       
       if (data && !error) {
-        setPreviousReports(data);
+        setPreviousReports(data as Report[]);
       }
     } catch (error) {
       console.error('Error generating AI report:', error);
