@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -5,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from '@/components/ui/use-toast';
 
 interface AuthFormProps {
   type: 'login' | 'register';
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
-  const { login, register } = useAuth();
+  const { login, register, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,13 +43,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         await login(email, password);
       } else {
         await register(name, email, password);
+        // The profile with grade, school, and interests will be updated later
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errMessage);
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: errMessage,
+      });
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Use error from context if available
+  React.useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
 
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-6 bg-card rounded-lg shadow-sm border border-border/50">
@@ -121,6 +137,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                   <SelectItem value="8">8th Grade</SelectItem>
                   <SelectItem value="9">9th Grade</SelectItem>
                   <SelectItem value="10">10th Grade</SelectItem>
+                  <SelectItem value="11-12">11-12th Grade</SelectItem>
                 </SelectContent>
               </Select>
             </div>

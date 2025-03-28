@@ -1,9 +1,7 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-// Get the Google AI Studio API key from environment variables
-const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || "AIzaSyCIUg4ZXk3yp3Ok9HOYPrJHGwwM3JAZImw";
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,162 +11,240 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { userInfo, answers, assessmentResult, careerMatches } = await req.json();
-    
-    console.log("Received request to generate career report for:", userInfo.name);
-    console.log("Number of answers:", Object.keys(answers).length);
-    console.log("Number of career matches:", careerMatches.length);
-    
-    // Prepare the prompt for Google AI Studio (Gemini)
-    const prompt = `
-    Generate a comprehensive career assessment report for a student with the following profile:
-    
-    STUDENT PROFILE:
-    Name: ${userInfo.name}
-    Age: ${userInfo.age || 'Not specified'}
-    Grade: ${userInfo.grade || '11-12'}
-    Location: ${userInfo.location || 'Not specified'}
-    
-    ASSESSMENT RESULTS:
-    Career Matches: ${careerMatches.map(match => `${match.path} (${match.matchScore}% match)`).join(', ')}
-    
-    Based on this information, generate a detailed career assessment report with the following sections:
-    1. Personality Analysis - Analyze the student's personality traits based on their assessment answers
-    2. Career Matches Analysis - Evaluate the top 3 career matches and explain why they are suitable
-    3. Skill Gap Analysis - Identify skills the student needs to develop for their top career matches
-    4. Education Roadmap - Recommend educational pathways for the top career match
-    5. Learning Style & Study Strategies - Suggest study approaches based on their learning preferences
-    
-    For each section, provide:
-    - A detailed analysis (200-300 words)
-    - Practical recommendations
-    - Visual representations of data where appropriate (as text-based charts/diagrams)
-    
-    Additionally, include:
-    - 3 specific warnings about potential challenges they might face
-    - 5 tailored recommendations for next steps
-    
-    Format the response as a JSON object with these sections as keys, where each section has "title", "content", and optionally "visual" properties.
-    `;
-    
-    // Make the request to Google AI Studio API (Gemini)
-    try {
-      console.log("Making request to Google AI Studio API...");
-      
-      const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GOOGLE_AI_API_KEY
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          }
-        })
-      });
-      
-      if (!geminiResponse.ok) {
-        const errorData = await geminiResponse.text();
-        console.error("Google AI Studio API error response:", errorData);
-        throw new Error(`Google AI Studio API error: ${errorData}`);
-      }
-      
-      const geminiData = await geminiResponse.json();
-      console.log("Received response from Google AI Studio API");
-      
-      // Extract the generated content
-      let content = {};
-      
-      try {
-        if (geminiData.candidates && geminiData.candidates[0]?.content?.parts) {
-          const textContent = geminiData.candidates[0].content.parts[0].text;
-          // Try to parse the JSON from the text response
-          content = JSON.parse(textContent.replace(/```json|```/g, '').trim());
-        } else {
-          throw new Error("Unexpected response format from Google AI Studio API");
-        }
-      } catch (parseError) {
-        console.error("Error parsing Google AI Studio response:", parseError);
-        
-        // Fallback to manually creating a structured response
-        content = {
-          sections: [
-            {
-              title: "Personality Analysis",
-              content: "Based on your assessment results, you exhibit strong analytical thinking skills and a methodical approach to problem-solving. Your responses indicate a preference for logical reasoning and data-based decision-making.",
-              visual: "Analytical Thinking: ████████░░ 80%\nMethodical Approach: ███████░░░ 70%\nCreativity: ██████░░░░ 60%"
-            },
-            {
-              title: "Career Matches Analysis",
-              content: `Your top career match is ${careerMatches[0]?.path || 'Engineering'} with a ${careerMatches[0]?.matchScore || '85'}% compatibility score. This aligns well with your analytical skills and problem-solving abilities.`,
-              visual: `${careerMatches[0]?.path || 'Engineering'}: ████████░░ ${careerMatches[0]?.matchScore || '85'}%\n${careerMatches[1]?.path || 'Computer Science'}: ███████░░░ ${careerMatches[1]?.matchScore || '75'}%`
-            },
-            {
-              title: "Skill Gap Analysis",
-              content: `To excel in ${careerMatches[0]?.path || 'Engineering'}, consider developing stronger skills in technical writing, project management, and advanced mathematics.`,
-              visual: "Technical Writing: ██████░░░░ 60% (Need: 80%)\nProject Management: █████░░░░░ 50% (Need: 75%)"
-            },
-            {
-              title: "Education Roadmap",
-              content: `A bachelor's degree in ${careerMatches[0]?.path || 'Engineering'} is recommended, followed by specialized certification or a master's degree in your area of interest.`,
-              visual: "Education Path:\nBachelor's Degree (4 years) → Specialized Certification (1 year) → Industry Experience"
-            },
-            {
-              title: "Learning Style & Study Strategies",
-              content: "Your assessment indicates you learn best through practical application and visual aids. Consider using diagrams, charts, and hands-on projects to reinforce your understanding of complex concepts."
-            }
-          ],
-          warnings: [
-            "Your current mathematical skills may need strengthening for advanced coursework.",
-            "The field requires continuous learning to keep up with evolving technologies.",
-            "Entry-level positions may require additional certifications beyond a degree."
-          ],
-          recommendations: [
-            "Take advanced mathematics courses to build a strong foundation.",
-            "Seek internship opportunities to gain practical experience.",
-            "Join professional organizations to build your network.",
-            "Develop a portfolio of projects to showcase your skills.",
-            "Consider a minor in business or communication to complement your technical skills."
-          ]
-        };
-      }
-      
-      return new Response(JSON.stringify(content), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (aiError) {
-      console.error("Google AI Studio API error:", aiError);
-      throw new Error(`Google AI Studio API error: ${aiError.message}`);
+    if (!GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY is not set in environment variables');
     }
-  } catch (error) {
-    console.error("Error:", error.message);
-    
-    return new Response(JSON.stringify({
-      error: error.message,
-      sections: [{
-        title: "Error Generating Report",
-        content: "There was an error generating your AI-enhanced career report. Please try again later or contact support."
-      }],
-      warnings: [],
-      recommendations: []
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+    const { userInfo, answers, assessmentResult, careerMatches } = await req.json();
+
+    console.log("Received data for AI report generation");
+    console.log("User info:", userInfo);
+    console.log("Career matches count:", careerMatches.length);
+
+    // Connect to Google AI Gemini
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_API_KEY}`;
+
+    // Prepare prompt with user data
+    const topCareerPaths = careerMatches.slice(0, 3).map(match => 
+      `${match.path} (Match: ${match.matchScore}%)`
+    ).join(", ");
+
+    let answersText = "";
+    if (answers) {
+      answersText = Object.entries(answers)
+        .map(([questionId, answer]) => `Question ${questionId}: ${answer}`)
+        .join("\n");
+    }
+
+    const prompt = `
+      Generate a comprehensive career guidance report for a student with the following profile:
+      
+      Name: ${userInfo.name}
+      Grade: ${userInfo.grade || 'High School'}
+      Email: ${userInfo.email || 'Not provided'}
+      ${userInfo.age ? `Age: ${userInfo.age}` : ''}
+      ${userInfo.location ? `Location: ${userInfo.location}` : ''}
+      
+      Assessment Results:
+      Top career matches: ${topCareerPaths}
+      
+      User's assessment answers:
+      ${answersText}
+      
+      Based on this information, please generate:
+      1. Three detailed sections analyzing their profile, career fit, and educational path.
+      2. A list of 3 warnings or challenges they might face.
+      3. A list of 5 specific recommendations for next steps.
+      
+      Format each section with a clear title and detailed content. Make the guidance specific to their top career matches.
+      Write this as if you're a professional career counselor addressing them directly.
+    `;
+
+    console.log("Sending request to Google AI");
+
+    const aiResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+          topP: 0.95,
+          topK: 40
+        }
+      })
     });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("Google AI API error:", errorText);
+      throw new Error(`Google AI API error: ${aiResponse.status} - ${errorText}`);
+    }
+
+    const aiData = await aiResponse.json();
+    console.log("Received response from Google AI");
+
+    const aiText = aiData.candidates[0].content.parts[0].text;
+    
+    // Parse the AI response into structured sections
+    const sections = parseAiResponse(aiText);
+    
+    return new Response(
+      JSON.stringify(sections),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+  } catch (error) {
+    console.error("Error in generate-ai-report function:", error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || "An error occurred during report generation",
+        sections: [],
+        warnings: ["Error generating report"],
+        recommendations: ["Please try again later"]
+      }),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json' 
+        },
+        status: 500
+      }
+    );
   }
 });
+
+function parseAiResponse(text: string) {
+  // Simple parsing function to extract sections, warnings and recommendations
+  const sections = [];
+  const warnings = [];
+  const recommendations = [];
+  
+  // Split by double newlines to get paragraphs
+  const paragraphs = text.split(/\n\n+/);
+  
+  let currentSection = null;
+  let inWarnings = false;
+  let inRecommendations = false;
+  
+  for (const para of paragraphs) {
+    const trimmedPara = para.trim();
+    
+    // Check for section headers
+    if (trimmedPara.startsWith('# ') || /^[A-Z][A-Za-z\s]+:/.test(trimmedPara)) {
+      // This is a section header
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      
+      const title = trimmedPara.replace(/^# /, '').replace(/:$/, '');
+      currentSection = { title, content: '' };
+      
+      // Check if we're entering warnings or recommendations
+      if (title.toLowerCase().includes('warning') || title.toLowerCase().includes('challenge')) {
+        inWarnings = true;
+        inRecommendations = false;
+      } else if (title.toLowerCase().includes('recommendation') || title.toLowerCase().includes('next step')) {
+        inWarnings = false;
+        inRecommendations = true;
+      } else {
+        inWarnings = false;
+        inRecommendations = false;
+      }
+    } 
+    // Check for bullet points that might be warnings or recommendations
+    else if (trimmedPara.startsWith('- ') || trimmedPara.startsWith('• ') || /^\d+\./.test(trimmedPara)) {
+      const item = trimmedPara.replace(/^[- •]\s*/, '').replace(/^\d+\.\s*/, '');
+      
+      if (inWarnings) {
+        warnings.push(item);
+      } else if (inRecommendations) {
+        recommendations.push(item);
+      } else if (currentSection) {
+        currentSection.content += trimmedPara + '\n\n';
+      }
+    }
+    // Regular content
+    else if (currentSection && trimmedPara) {
+      currentSection.content += trimmedPara + '\n\n';
+    }
+  }
+  
+  // Add the last section if there is one
+  if (currentSection) {
+    sections.push(currentSection);
+  }
+  
+  // Extract warnings and recommendations if they weren't explicitly marked
+  if (warnings.length === 0) {
+    const warningSection = sections.find(s => 
+      s.title.toLowerCase().includes('warning') || 
+      s.title.toLowerCase().includes('challenge')
+    );
+    
+    if (warningSection) {
+      const extracted = extractBulletPoints(warningSection.content);
+      warnings.push(...extracted);
+    }
+  }
+  
+  if (recommendations.length === 0) {
+    const recSection = sections.find(s => 
+      s.title.toLowerCase().includes('recommendation') || 
+      s.title.toLowerCase().includes('next step')
+    );
+    
+    if (recSection) {
+      const extracted = extractBulletPoints(recSection.content);
+      recommendations.push(...extracted);
+    }
+  }
+  
+  return {
+    sections: sections.filter(s => 
+      !s.title.toLowerCase().includes('warning') && 
+      !s.title.toLowerCase().includes('challenge') &&
+      !s.title.toLowerCase().includes('recommendation') && 
+      !s.title.toLowerCase().includes('next step')
+    ),
+    warnings,
+    recommendations
+  };
+}
+
+function extractBulletPoints(text: string) {
+  const lines = text.split('\n');
+  const points = [];
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ') || /^\d+\./.test(trimmedLine)) {
+      const point = trimmedLine.replace(/^[- •]\s*/, '').replace(/^\d+\.\s*/, '');
+      if (point) {
+        points.push(point);
+      }
+    }
+  }
+  
+  return points;
+}

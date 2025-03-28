@@ -1,318 +1,343 @@
 
 import React, { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PageTransition from '../components/layout/PageTransition';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, School, BookOpen, Save } from 'lucide-react';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/use-toast';
+import { 
+  UserRound, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  GraduationCap, 
+  Building, 
+  Calendar,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react';
 
 const Profile: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, isAuthenticated, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    grade: user?.grade || '',
-    school: user?.school || '',
-    interests: user?.interests || []
-  });
-
-  // Redirect if not logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Form state
+  const [name, setName] = useState(user?.name || '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
+  const [age, setAge] = useState(user?.age || '');
+  const [location, setLocation] = useState(user?.location || '');
+  const [grade, setGrade] = useState(user?.grade || '');
+  const [school, setSchool] = useState(user?.school || '');
+  const [interests, setInterests] = useState<string[]>(user?.interests || []);
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
   }
-
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-    if (!isEditing) {
-      // Reset form data to current user data when entering edit mode
-      setFormData({
-        name: user.name,
-        email: user.email,
-        grade: user.grade,
-        school: user.school || '',
-        interests: user.interests || []
-      });
+  
+  const availableInterests = [
+    'Science', 'Technology', 'Engineering', 'Mathematics', 
+    'Arts', 'Music', 'Literature', 'History',
+    'Social Studies', 'Physical Education', 'Business', 'Economics'
+  ];
+  
+  const handleToggleInterest = (interest: string) => {
+    if (interests.includes(interest)) {
+      setInterests(interests.filter(i => i !== interest));
+    } else {
+      setInterests([...interests, interest]);
     }
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
-  const handleGradeChange = (value: string) => {
-    setFormData({
-      ...formData,
-      grade: value
-    });
-  };
-
-  const handleInterestChange = (interest: string) => {
-    const updatedInterests = formData.interests.includes(interest)
-      ? formData.interests.filter(i => i !== interest)
-      : [...formData.interests, interest];
-
-    setFormData({
-      ...formData,
-      interests: updatedInterests
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
     
     try {
       await updateProfile({
-        name: formData.name,
-        email: formData.email,
-        grade: formData.grade,
-        school: formData.school,
-        interests: formData.interests
+        name,
+        phoneNumber,
+        age,
+        location,
+        grade,
+        school,
+        interests
       });
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
+      
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      console.error('Error updating profile:', error);
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "There was an error updating your profile. Please try again.",
+      });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
-
+  
   return (
     <PageTransition>
-      <div className="page-container max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Your Profile</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your account information
+          <h1 className="text-3xl font-bold mb-2">My Profile</h1>
+          <p className="text-muted-foreground">
+            View and update your personal information.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <Card>
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <User className="h-5 w-5 mr-2 text-primary" />
-                    <CardTitle>Personal Information</CardTitle>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleEditToggle}
-                  >
-                    {isEditing ? 'Cancel' : 'Edit'}
-                  </Button>
-                </div>
-                <CardDescription>
-                  Update your personal details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isEditing ? (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input 
-                        id="name" 
-                        name="name" 
-                        value={formData.name} 
-                        onChange={handleInputChange} 
-                        required 
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        value={formData.email} 
-                        onChange={handleInputChange} 
-                        required 
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="grade">Grade</Label>
-                      <Select 
-                        value={formData.grade} 
-                        onValueChange={handleGradeChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select grade" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="8">8th Grade</SelectItem>
-                          <SelectItem value="9">9th Grade</SelectItem>
-                          <SelectItem value="10">10th Grade</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="school">School</Label>
-                      <Input 
-                        id="school" 
-                        name="school" 
-                        value={formData.school} 
-                        onChange={handleInputChange} 
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Interests</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {[
-                          'Science', 'Art', 'Technology', 'Sports',
-                          'Music', 'Writing', 'Mathematics', 'Social Studies'
-                        ].map((interest) => (
-                          <div 
-                            key={interest}
-                            className={`
-                              p-2 border rounded-md text-center text-sm cursor-pointer transition-all
-                              ${formData.interests.includes(interest) 
-                                ? 'bg-primary/10 border-primary/50 text-primary font-medium' 
-                                : 'border-border hover:bg-accent'
-                              }
-                            `}
-                            onClick={() => handleInterestChange(interest)}
-                          >
-                            {interest}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center">
-                            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                            Saving...
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Changes
-                          </div>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
-                        <p>{user.name}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                        <p>{user.email}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Grade</h3>
-                        <p>{user.grade}th Grade</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">School</h3>
-                        <p>{user.school || 'Not specified'}</p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Interests</h3>
-                      <div className="flex flex-wrap gap-1.5">
-                        {user.interests && user.interests.length > 0 ? (
-                          user.interests.map((interest) => (
-                            <div 
-                              key={interest} 
-                              className="text-xs bg-secondary text-secondary-foreground rounded-full px-2.5 py-1"
-                            >
-                              {interest}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No interests specified</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+            <CardDescription>
+              Your personal details are used to personalize your career assessment experience.
+            </CardDescription>
+          </CardHeader>
           
-          <div>
-            <div className="space-y-6">
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center">
-                    <School className="h-5 w-5 mr-2 text-primary" />
-                    <CardTitle>Education</CardTitle>
+          <CardContent className="space-y-4">
+            {isEditing ? (
+              // Edit mode
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input 
+                    id="name" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input 
+                      id="phoneNumber" 
+                      value={phoneNumber} 
+                      onChange={(e) => setPhoneNumber(e.target.value)} 
+                      placeholder="Enter your phone number"
+                    />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                  
+                  <div>
+                    <Label htmlFor="age">Age</Label>
+                    <Input 
+                      id="age" 
+                      value={age} 
+                      onChange={(e) => setAge(e.target.value)} 
+                      placeholder="Enter your age"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input 
+                    id="location" 
+                    value={location} 
+                    onChange={(e) => setLocation(e.target.value)} 
+                    placeholder="Enter your location"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="grade">Grade</Label>
+                    <Select value={grade} onValueChange={setGrade}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your grade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="8">8th Grade</SelectItem>
+                        <SelectItem value="9">9th Grade</SelectItem>
+                        <SelectItem value="10">10th Grade</SelectItem>
+                        <SelectItem value="11-12">11-12th Grade</SelectItem>
+                        <SelectItem value="college">College</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="school">School</Label>
+                    <Input 
+                      id="school" 
+                      value={school} 
+                      onChange={(e) => setSchool(e.target.value)} 
+                      placeholder="Enter your school name"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label>Interests</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                    {availableInterests.map((interest) => (
+                      <div
+                        key={interest}
+                        className={`
+                          p-2 border rounded cursor-pointer transition-colors
+                          ${interests.includes(interest) 
+                            ? 'bg-primary/10 border-primary/30 text-primary' 
+                            : 'border-border hover:bg-accent/50'}
+                        `}
+                        onClick={() => handleToggleInterest(interest)}
+                      >
+                        {interest}
+                        {interests.includes(interest) && (
+                          <CheckCircle className="h-4 w-4 inline ml-2" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // View mode
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                  <UserRound className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Full Name</p>
+                    <p className="font-medium">{user?.name || 'Not provided'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{user?.email || 'Not provided'}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <h3 className="text-sm font-medium">Current Grade</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {user.grade}th Grade
-                      </p>
+                      <p className="text-sm text-muted-foreground">Phone Number</p>
+                      <p className="font-medium">{user?.phoneNumber || 'Not provided'}</p>
                     </div>
-                    
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <h3 className="text-sm font-medium">School</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {user.school || 'Not specified'}
-                      </p>
+                      <p className="text-sm text-muted-foreground">Age</p>
+                      <p className="font-medium">{user?.age || 'Not provided'}</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center">
-                    <BookOpen className="h-5 w-5 mr-2 text-primary" />
-                    <CardTitle>Assessment History</CardTitle>
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-medium">{user?.location || 'Not provided'}</p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-6">
-                    <p className="text-sm text-muted-foreground">
-                      No completed assessments yet
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-4"
-                      asChild
-                    >
-                      <Link to="/assessment">Take Assessment</Link>
-                    </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                    <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Grade</p>
+                      <p className="font-medium">{user?.grade || 'Not provided'}</p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
+                  
+                  <div className="flex items-center space-x-3 p-3 rounded-md bg-background">
+                    <Building className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">School</p>
+                      <p className="font-medium">{user?.school || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 rounded-md bg-background">
+                  <p className="text-sm text-muted-foreground mb-2">Interests</p>
+                  {user?.interests && user.interests.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {user.interests.map((interest) => (
+                        <span 
+                          key={interest}
+                          className="px-2 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                        >
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No interests selected</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+          
+          <CardFooter className="flex justify-end space-x-4">
+            {isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Reset form
+                    setName(user?.name || '');
+                    setPhoneNumber(user?.phoneNumber || '');
+                    setAge(user?.age || '');
+                    setLocation(user?.location || '');
+                    setGrade(user?.grade || '');
+                    setSchool(user?.school || '');
+                    setInterests(user?.interests || []);
+                    setIsEditing(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setIsEditing(true)}>
+                Edit Profile
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
       </div>
     </PageTransition>
   );

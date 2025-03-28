@@ -93,10 +93,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const getUserProfile = async (userId: string): Promise<User> => {
     try {
       // Check if profile exists in database
-      // Since the profiles table doesn't exist in the type definitions yet,
-      // we need to use a workaround by using 'from' with a more generic type
       const { data: profile, error: profileError } = await supabase
-        .from('profiles_old')
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
@@ -119,12 +117,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: userId,
           name: profile.full_name || userData.user.email?.split('@')[0] || 'User',
           email: userData.user.email || '',
-          phoneNumber: '',
-          age: '',
-          location: '',
-          grade: '11-12',
-          school: '',
-          interests: []
+          photoURL: profile.avatar_url,
+          phoneNumber: profile.phone || '',
+          age: profile.age || '',
+          location: profile.location || '',
+          grade: profile.grade || '11-12',
+          school: profile.school || '',
+          interests: profile.interests || []
         };
       }
       
@@ -199,20 +198,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (data.user) {
-        // Create or update profile
-        // We need to adapt this to use the existing table profiles_old
-        const { error: profileError } = await supabase
-          .from('profiles_old')
-          .upsert({
-            id: data.user.id,
-            full_name: name,
-            updated_at: new Date().toISOString()
-          });
-        
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
-        
+        // Profile is created by the database trigger
         // User will be set by the auth state listener
         navigate('/dashboard');
       }
@@ -235,12 +221,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       // Update profile in database
-      // Adapting to use the profiles_old table
       const { error: updateError } = await supabase
-        .from('profiles_old')
+        .from('profiles')
         .upsert({
           id: user.id,
           full_name: userData.name || user.name,
+          phone: userData.phoneNumber || user.phoneNumber,
+          age: userData.age || user.age,
+          location: userData.location || user.location,
+          grade: userData.grade || user.grade,
+          school: userData.school || user.school,
+          interests: userData.interests || user.interests,
           updated_at: new Date().toISOString()
         });
       

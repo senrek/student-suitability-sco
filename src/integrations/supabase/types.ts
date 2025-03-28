@@ -44,6 +44,30 @@ export type Database = {
           },
         ]
       }
+      assessment_reports: {
+        Row: {
+          career_matches: Json | null
+          created_at: string
+          id: string
+          report_data: Json
+          user_id: string
+        }
+        Insert: {
+          career_matches?: Json | null
+          created_at?: string
+          id?: string
+          report_data: Json
+          user_id: string
+        }
+        Update: {
+          career_matches?: Json | null
+          created_at?: string
+          id?: string
+          report_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       assessment_sessions: {
         Row: {
           assessment_type: Database["public"]["Enums"]["assessment_type"]
@@ -81,6 +105,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          age: string | null
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          grade: string | null
+          id: string
+          interests: string[] | null
+          location: string | null
+          phone: string | null
+          school: string | null
+          updated_at: string
+        }
+        Insert: {
+          age?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          grade?: string | null
+          id: string
+          interests?: string[] | null
+          location?: string | null
+          phone?: string | null
+          school?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          grade?: string | null
+          id?: string
+          interests?: string[] | null
+          location?: string | null
+          phone?: string | null
+          school?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles_old: {
         Row: {

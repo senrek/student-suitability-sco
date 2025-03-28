@@ -26,9 +26,6 @@ interface AIReportData {
   error?: string;
 }
 
-// Since we don't have assessment_reports table in the Supabase schema yet, 
-// we'll modify the function to just log the data instead of saving to Supabase
-
 const saveReportToSupabase = async (userId: string, reportData: AIReportData, careerMatches: any[]) => {
   try {
     // Check if userId exists
@@ -37,9 +34,18 @@ const saveReportToSupabase = async (userId: string, reportData: AIReportData, ca
       return false;
     }
     
-    console.log('Would save report to Supabase for user:', userId);
-    console.log('Report data:', reportData);
-    console.log('Career matches:', careerMatches);
+    const { error } = await supabase
+      .from('assessment_reports')
+      .insert({
+        user_id: userId,
+        report_data: reportData,
+        career_matches: careerMatches
+      });
+    
+    if (error) {
+      console.error('Error saving report to Supabase:', error);
+      return false;
+    }
     
     return true;
   } catch (error) {
