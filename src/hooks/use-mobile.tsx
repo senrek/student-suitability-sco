@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 
+// Export the existing useMediaQuery function
 export const useMediaQuery = (query: string): boolean => {
   const [matches, setMatches] = useState(false);
 
@@ -17,4 +18,9 @@ export const useMediaQuery = (query: string): boolean => {
   }, [matches, query]);
 
   return matches;
+};
+
+// Add the useIsMobile function that was missing but is used in sidebar.tsx
+export const useIsMobile = (): boolean => {
+  return useMediaQuery("(max-width: 768px)");
 };
