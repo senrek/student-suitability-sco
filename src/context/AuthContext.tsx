@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,31 +51,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const initAuth = async () => {
       setLoading(true);
       
-      // Check for existing session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Error getting session:', sessionError);
+      try {
+        // Check for existing session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error getting session:', sessionError);
+          return;
+        }
+        
+        if (session?.user) {
+          const userData = await getUserProfile(session.user.id);
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+      } finally {
         setLoading(false);
-        return;
       }
-      
-      if (session?.user) {
-        const userData = await getUserProfile(session.user.id);
-        setUser(userData);
-      }
-      
-      setLoading(false);
     };
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         if (event === 'SIGNED_IN' && session?.user) {
           const userData = await getUserProfile(session.user.id);
           setUser(userData);
+          setError(null);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setError(null);
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          const userData = await getUserProfile(session.user.id);
+          setUser(userData);
         }
       }
     );
@@ -153,23 +161,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(true);
       setError(null);
       
+      if (!email || !password) {
+        const errorMsg = 'Email and password are required';
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log('Attempting login with email:', email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (signInError) {
-        setError(signInError.message);
-        throw signInError;
+        console.error('Login error:', signInError);
+        let errorMessage = signInError.message;
+        
+        // Provide more user-friendly error messages
+        if (errorMessage.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please try again.';
+        }
+        
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
       
       if (data.user) {
+        console.log('Login successful for user:', data.user.id);
+        setError(null);
         // User profile is fetched by the auth listener
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to login');
+      const errorMessage = err.message || 'Failed to login';
+      setError(errorMessage);
       console.error('Login error:', err);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -181,6 +208,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(true);
       setError(null);
       
+      if (!name || !email || !password) {
+        const errorMsg = 'Name, email and password are required';
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      if (password.length < 6) {
+        const errorMsg = 'Password must be at least 6 characters';
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log('Attempting registration with email:', email);
       // Sign up with Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -193,18 +233,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (signUpError) {
+        console.error('Registration error:', signUpError);
         setError(signUpError.message);
         throw signUpError;
       }
       
       if (data.user) {
+        console.log('Registration successful for user:', data.user.id);
         // Profile is created by the database trigger
         // User will be set by the auth state listener
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      const errorMessage = err.message || 'Registration failed';
+      setError(errorMessage);
       console.error('Registration error:', err);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -288,7 +332,9 @@ export const RequireAuth: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return <div>Loading...</div>; // You can replace this with a proper loading component
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+    </div>;
   }
   
   if (!isAuthenticated) {

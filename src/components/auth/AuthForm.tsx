@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
+import { AlertCircle } from 'lucide-react'; 
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -40,12 +41,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     try {
       if (type === 'login') {
+        console.log(`Attempting login with email: ${email}`);
         await login(email, password);
       } else {
+        console.log(`Attempting registration with email: ${email}`);
         await register(name, email, password);
         // The profile with grade, school, and interests will be updated later
       }
     } catch (err) {
+      console.error('Authentication error:', err);
       const errMessage = err instanceof Error ? err.message : 'An error occurred';
       setError(errMessage);
       toast({
@@ -79,8 +83,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
       </div>
 
       {error && (
-        <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-          {error}
+        <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -109,6 +114,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full"
+            autoComplete={type === 'login' ? 'username' : 'email'}
           />
         </div>
 
@@ -122,7 +128,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="w-full"
+            autoComplete={type === 'login' ? 'current-password' : 'new-password'}
+            minLength={6}
           />
+          {type === 'register' && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Password must be at least 6 characters
+            </p>
+          )}
         </div>
 
         {type === 'register' && (
